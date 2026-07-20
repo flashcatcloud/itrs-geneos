@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gateway compatibility="1">
+  <effects>
+    <effect name="FlashDuty Event">
+      <script>
+        <exeFile>/opt/itrs/gateway/gateway_shared/geneos-flashduty</exeFile>
+        <arguments>
+          <data/>
+        </arguments>
+        <runLocation>gateway</runLocation>
+      </script>
+    </effect>
+  </effects>
+</gateway>

@@ -1,0 +1,12 @@
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.tmp
+
+coverage.out
+*.test
+
+/dist/
+/geneos-flashduty
+/geneos-flashduty-*
