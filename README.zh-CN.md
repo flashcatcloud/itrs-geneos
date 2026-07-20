@@ -1,14 +1,14 @@
-# Geneos → FlashDuty
+# Geneos → Flashduty
 
 [English](README.md) | 简体中文
 
-`geneos-flashduty` 是一个独立的 Go 可执行程序，将 ITRS Geneos Alerting Effect 或 Rule Action 转换为 FlashDuty 标准告警事件。
+`geneos-flashduty` 是一个独立的 Go 可执行程序，将 ITRS Geneos Alerting Effect 或 Rule Action 转换为 Flashduty 标准告警事件。
 
 ## 工作方式
 
 ```text
 Geneos Alerting + Effect --\
-                            +--> geneos-flashduty --> FlashDuty Standard Alert API
+                            +--> geneos-flashduty --> Flashduty Standard Alert API
 Geneos Rule + Action -------/
 ```
 
@@ -29,7 +29,7 @@ _VARIABLEPATH 缺失、稳定组件充分
 
 ## 状态映射
 
-| Geneos 上下文 | FlashDuty `event_status` |
+| Geneos 上下文 | Flashduty `event_status` |
 | --- | --- |
 | `_ALERT_TYPE=clear` | `Ok` |
 | `_SEVERITY=OK` | `Ok` |
@@ -37,7 +37,7 @@ _VARIABLEPATH 缺失、稳定组件充分
 | `_SEVERITY=WARNING` | `Warning` |
 | `_SEVERITY=INFO/UNDEFINED` | `Info` |
 
-`resolve` 子命令始终发送 `Ok`。FlashDuty 标准事件没有 PagerDuty `acknowledge` 的等价状态，因此 Geneos suspend/assign 不映射为认领；认领、值班和升级由 FlashDuty 管理。
+`resolve` 子命令始终发送 `Ok`。Flashduty 标准事件没有 PagerDuty `acknowledge` 的等价状态，因此 Geneos suspend/assign 不映射为认领；认领、值班和升级由 Flashduty 管理。
 
 ## 安装与构建
 
@@ -79,7 +79,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o geneos-flashduty-linux-amd64 .
 
    也可以通过 `--config PATH` 显式指定。文件优先级为显式路径、当前目录、用户配置目录、系统配置目录。
 
-3. 在 FlashDuty 创建“自定义告警事件”集成并取得 `integration_key`。
+3. 按照下方[获取 integration_key](#获取-integration_key)的说明创建“标准告警事件”集成。
 
 4. 推荐在 Geneos Managed Entity 或 Managed Entity Group 上增加属性：
 
@@ -87,9 +87,9 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o geneos-flashduty-linux-amd64 .
    FLASHDUTY_INTEGRATION_KEY=<your-integration-key>
    ```
 
-   Geneos 会把属性传递给 Action/Effect。该环境变量优先于 YAML 中的 `integration_key`，因此不同 Managed Entity 可以路由至不同 FlashDuty 集成。
+   Geneos 会把属性传递给 Action/Effect。该环境变量优先于 YAML 中的 `integration_key`，因此不同 Managed Entity 可以路由至不同 Flashduty 集成。
 
-   **触发和恢复必须使用同一个 FlashDuty integration key。** 如果两次事件被路由到不同集成，即使 `alert_key` 相同也无法关联。
+   **触发和恢复必须使用同一个 Flashduty integration key。** 如果两次事件被路由到不同集成，即使 `alert_key` 相同也无法关联。
 
 5. 导入或参考：
 
@@ -102,6 +102,28 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o geneos-flashduty-linux-amd64 .
 
 参考 [`flashduty.example.yaml`](flashduty.example.yaml)。YAML 只需写需要覆盖的字段，其他值沿用内置默认配置。
 
+### 获取 integration_key
+
+在 Flashduty 中创建“标准告警事件”集成并复制推送地址。官方支持两种创建方式：
+
+1. **专属集成**：进入某个**协作空间**，选择**集成数据**，点击**添加一个集成**，选择**标准告警事件**并保存；打开生成的卡片，复制推送地址。
+2. **共享集成**：进入**集成中心 → 告警事件**，选择**标准告警事件**，填写集成名称并配置到协作空间的默认路由；保存后复制生成的推送地址。
+
+推送地址包含 `integration_key` 查询参数，例如：
+
+```text
+https://api.flashcat.cloud/event/push/alert/standard?integration_key=YOUR_KEY
+```
+
+配置时请按以下方式拆分复制的推送地址：
+
+- 将推送地址移除 `integration_key` 参数后填写到 `flashduty.endpoint`；保留原地址的域名、路径和其他查询参数，尤其是它们与默认 endpoint 不同时；
+- 将 `integration_key` 的值填写到 YAML，或者按照下方说明设置为 `FLASHDUTY_INTEGRATION_KEY`。
+
+程序会自动追加 key。请将它作为密钥保管。
+
+控制台入口和协议的最新说明请参考 [Flashduty 官方“标准告警事件”文档](https://docs.flashduty.com/zh/on-call/integration/alert-integration/alert-sources/standard-alert)。
+
 最小配置示例：
 
 ```yaml
@@ -110,7 +132,7 @@ flashduty:
   integration_key: your-integration-key
 ```
 
-`flashduty.endpoint` 可以随 FlashDuty 推送地址变化进行修改；未配置时使用上述内置默认地址。程序会把 integration key 作为 `integration_key` 查询参数自动追加到 endpoint，即使 endpoint 已经包含其他查询参数也可以正常处理。
+`flashduty.endpoint` 可以随 Flashduty 推送地址变化进行修改；未配置时使用上述内置默认地址。程序会把 integration key 作为 `integration_key` 查询参数自动追加到 endpoint，即使 endpoint 已经包含其他查询参数也可以正常处理。
 
 标题、描述和自定义标签值支持 `${NAME}` 环境变量模板。以下内容不会进行模板展开：endpoint、integration key、超时、重试次数、key 前缀和 severity map。
 
@@ -147,14 +169,14 @@ geneos-flashduty test --config /etc/geneos/flashduty.yaml
 - 其他 4xx 不重试；
 - 遵循 `Retry-After`，最大等待 60 秒；
 - 成功退出码为 0，失败为非零；
-- 成功日志包含 FlashDuty `request_id`；
+- 成功日志包含 Flashduty `request_id`；
 - 日志中的 integration key 会被脱敏。
 
 ## 排查
 
-- `FlashDuty integration key is required`：配置 YAML key 或 Geneos 属性 `FLASHDUTY_INTEGRATION_KEY`。
+- 如果程序提示缺少 integration key，请配置 YAML key 或 Geneos 属性 `FLASHDUTY_INTEGRATION_KEY`。
 - HTTP 401/403：检查集成推送地址和 key 是否属于同一个集成。
-- 告警无法恢复：确认触发和恢复使用相同 `_VARIABLEPATH`、相同 key 算法版本和相同 FlashDuty integration key。
+- 告警无法恢复：确认触发和恢复使用相同 `_VARIABLEPATH`、相同 key 算法版本和相同 Flashduty integration key。
 - 日志出现 `alert_key_source=random`：Geneos 没有提供足够的稳定身份字段，后续恢复无法保证关联；优先检查 Action/Effect 的触发上下文。
 - Gateway 无法访问：确认 Gateway 主机可以通过 HTTPS 访问 `api.flashcat.cloud`。
 
