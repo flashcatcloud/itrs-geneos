@@ -1,17 +1,17 @@
-# ITRS Geneos to FlashDuty
+# ITRS Geneos to Flashduty
 
 [![CI](https://github.com/flashcatcloud/itrs-geneos/actions/workflows/ci.yml/badge.svg)](https://github.com/flashcatcloud/itrs-geneos/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/flashcatcloud/itrs-geneos)](https://github.com/flashcatcloud/itrs-geneos/releases)
 
 English | [简体中文](README.zh-CN.md)
 
-`geneos-flashduty` is a small, standalone Go executable that converts ITRS Geneos Alerting Effect or Rule Action events into [FlashDuty standard alert events](https://flashcat.cloud/product/flashduty/). It runs once per event, keeps no local state, and can be deployed as a single binary on the Geneos Gateway host.
+`geneos-flashduty` is a small, standalone Go executable that converts ITRS Geneos Alerting Effect or Rule Action events into [Flashduty standard alert events](https://flashcat.cloud/product/flashduty/). It runs once per event, keeps no local state, and can be deployed as a single binary on the Geneos Gateway host.
 
 ## How it works
 
 ```text
 Geneos Alerting + Effect --\
-                            +--> geneos-flashduty --> FlashDuty Standard Alert API
+                            +--> geneos-flashduty --> Flashduty Standard Alert API
 Geneos Rule + Action -------/
 ```
 
@@ -32,7 +32,7 @@ The random fallback still delivers the event, but a later recovery cannot be gua
 
 ## Status mapping
 
-| Geneos context | FlashDuty `event_status` |
+| Geneos context | Flashduty `event_status` |
 | --- | --- |
 | `_ALERT_TYPE=clear` | `Ok` |
 | `_SEVERITY=OK` | `Ok` |
@@ -40,7 +40,7 @@ The random fallback still delivers the event, but a later recovery cannot be gua
 | `_SEVERITY=WARNING` | `Warning` |
 | `_SEVERITY=INFO` or `UNDEFINED` | `Info` |
 
-The `resolve` command always sends `Ok`. FlashDuty's standard event protocol has no equivalent of PagerDuty's `acknowledge`, so Geneos suspend and assignment events are not mapped to acknowledgement. Ownership, on-call, and escalation stay in FlashDuty.
+The `resolve` command always sends `Ok`. Flashduty's standard event protocol has no equivalent of PagerDuty's `acknowledge`, so Geneos suspend and assignment events are not mapped to acknowledgement. Ownership, on-call, and escalation stay in Flashduty.
 
 ## Install
 
@@ -69,6 +69,28 @@ Copy [`flashduty.example.yaml`](flashduty.example.yaml) to one of these location
 
 The first matching file wins. An explicit but unreadable `--config` path is an error; missing implicit files are ignored.
 
+### Obtain an integration key
+
+Create a **Standard Alert Event** integration in Flashduty and copy its push URL. Flashduty provides two setup paths:
+
+1. **Dedicated integration** — open a collaboration space, select **Integration Data**, click **Add an integration**, select **Standard Alert Event**, save it, then open the generated card and copy the push URL.
+2. **Shared integration** — open **Integration Center → Alert Events**, select **Standard Alert Event**, configure its name and default route to a collaboration space, save it, and copy the generated push URL.
+
+The URL contains the credential as a query parameter:
+
+```text
+https://api.flashcat.cloud/event/push/alert/standard?integration_key=YOUR_KEY
+```
+
+Use the copied URL when configuring the program:
+
+- set `flashduty.endpoint` to the copied URL with only the `integration_key` parameter removed; preserve its host, path, and any other query parameters, especially when they differ from the default endpoint;
+- copy the `integration_key` value into YAML or set it through `FLASHDUTY_INTEGRATION_KEY`, as shown below.
+
+The program appends the key automatically. Treat it as a secret.
+
+See the [official Standard Alert Event documentation](https://docs.flashduty.com/zh/on-call/integration/alert-integration/alert-sources/standard-alert) for the latest console steps and protocol details.
+
 Minimal configuration:
 
 ```yaml
@@ -77,7 +99,7 @@ flashduty:
   integration_key: your-integration-key
 ```
 
-`flashduty.endpoint` can be changed if your FlashDuty push URL changes. If it is omitted, the URL above is the compiled default. The program appends the integration key as the `integration_key` query parameter, including when the endpoint already has other query parameters.
+`flashduty.endpoint` can be changed if your Flashduty push URL changes. If it is omitted, the URL above is the compiled default. The program appends the integration key as the `integration_key` query parameter, including when the endpoint already has other query parameters.
 
 For better secret handling and per-entity routing, set the key as a Geneos Managed Entity or Managed Entity Group attribute instead:
 
@@ -85,7 +107,7 @@ For better secret handling and per-entity routing, set the key as a Geneos Manag
 FLASHDUTY_INTEGRATION_KEY=<your-integration-key>
 ```
 
-This environment value overrides the YAML value. Trigger and recovery events must use the same integration key; otherwise they reach different FlashDuty integrations and cannot correlate even when their `alert_key` values match.
+This environment value overrides the YAML value. Trigger and recovery events must use the same integration key; otherwise they reach different Flashduty integrations and cannot correlate even when their `alert_key` values match.
 
 The example configuration also documents timeout, retry, severity, title, description, and custom-label settings. `${NAME}` references in title, description, and custom label values expand from environment variables. Endpoint, key, timeout, retries, key prefix, and severity mapping are not template-expanded.
 
@@ -133,8 +155,8 @@ Test mode sends `Info` and then `Ok` with the same generated key so it does not 
 
 ## Troubleshooting
 
-- `FlashDuty integration key is required`: set `FLASHDUTY_INTEGRATION_KEY` or `flashduty.integration_key`.
-- HTTP 401/403: verify that the endpoint and key belong to the same FlashDuty integration.
+- If the program reports that an integration key is required, set `FLASHDUTY_INTEGRATION_KEY` or `flashduty.integration_key`.
+- HTTP 401/403: verify that the endpoint and key belong to the same Flashduty integration.
 - An alert does not recover: verify the same `_VARIABLEPATH`, key algorithm version, and integration key are used for both events.
 - `alert_key_source=random` appears in logs: Geneos did not provide enough stable identity data, so recovery correlation cannot be guaranteed.
 - Connection failure: confirm that the Gateway host can reach the configured endpoint over HTTPS.
