@@ -18,7 +18,7 @@ Only `README.md` and `README.zh-CN.md` will change. Application code, configurat
 
 ## Documentation Changes
 
-All product-name occurrences in the two README files change from `FlashDuty` to `Flashduty`. Code identifiers such as `FLASHDUTY_INTEGRATION_KEY`, executable names, URLs, and quoted runtime error text remain unchanged.
+All product-name occurrences in the two README files change from `FlashDuty` to `Flashduty`. Code identifiers such as `FLASHDUTY_INTEGRATION_KEY`, executable names, URLs, and runtime behavior remain unchanged. Troubleshooting text may paraphrase a runtime error instead of quoting its old brand spelling literally.
 
 Both README files will explain the two official ways to obtain a push URL:
 
