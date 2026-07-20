@@ -1,0 +1,32 @@
+flashduty:
+  endpoint: https://api.flashcat.cloud/event/push/alert/standard
+
+  # Prefer setting FLASHDUTY_INTEGRATION_KEY as a Geneos Managed Entity
+  # attribute. The environment value overrides this YAML value.
+  integration_key: ""
+
+  timeout: 10s
+  retries: 3
+
+  alert_key:
+    prefix: "geneos:v1:"
+
+  severity_map:
+    CRITICAL: Critical
+    WARNING: Warning
+    INFO: Info
+    OK: Ok
+    UNDEFINED: Info
+    "3": Critical
+    "2": Warning
+    "1": Ok
+    "0": Info
+
+  title: "${_RULE} Triggered"
+  description: >-
+    entity=${_MANAGED_ENTITY}, value=${_VALUE}, path=${_VARIABLEPATH}
+
+  # Optional extra labels. Values support ${ENVIRONMENT_VARIABLE} templates.
+  labels:
+    environment: "${ENVIRONMENT}"
+    team: "${TEAM}"
